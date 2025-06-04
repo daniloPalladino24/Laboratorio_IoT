@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎛️ Servo Controller Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <i class="fas fa-cogs"></i>
+            <h3>Servo Control</h3>
+        </div>
+        <ul class="nav-menu">
+            <li><a href="#overview" onclick="showSection('overview')"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+            <li><a href="#charts" onclick="showSection('charts')"><i class="fas fa-chart-line"></i> Grafici</a></li>
+            <li><a href="#table" onclick="showSection('table')"><i class="fas fa-table"></i> Tabella Dati</a></li>
+            <li><a href="#settings" onclick="showSection('settings')"><i class="fas fa-sliders-h"></i> Impostazioni</a></li>
+        </ul>
+    </nav>
+
+    <div class="main-content">
+        <header class="main-header">
+            <div class="header-content">
+                <h1><i class="fas fa-robot"></i> Servo Controller Dashboard</h1>
+                <p>Controllo Real-time di 3 Servo + Potenziometri + LED</p>
+            </div>
+            <div class="header-stats">
+                <div class="stat-card">
+                    <i class="fas fa-signal"></i>
+                    <span id="totalMessages">-</span>
+                    <small>Messaggi/Ora</small>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-power-off"></i>
+                    <span id="activeServos">-</span>
+                    <small>Servo Attivi</small>
+                </div>
+                <div class="stat-card button-status" id="buttonCard">
+                    <i class="fas fa-hand-pointer"></i>
+                    <span id="buttonStatus">-</span>
+                    <small>Pulsante</small>
+                </div>
+                <div class="stat-card led-status" id="ledCard">
+                    <i class="fas fa-lightbulb"></i>
+                    <span id="ledStatus">-</span>
+                    <small>LED</small>
+                </div>
+            </div>
+        </header>
+
+        <section id="overview" class="content-section active">
+            <div class="servo-grid">
+                <div class="servo-card" id="servo1">
+                    <div class="servo-header">
+                        <i class="fas fa-cog"></i>
+                        <h3>SERVO 1</h3>
+                        <span class="servo-badge" id="badge1">STOP</span>
+                    </div>
+                    <div class="servo-display">
+                        <div class="angle-display">
+                            <span class="angle-value" id="angle1">0</span>
+                            <span class="angle-unit">°</span>
+                        </div>
+                        <div class="servo-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" id="progress1"></div>
+                                <div class="progress-thumb" id="thumb1"></div>
+                            </div>
+                        </div>
+                        <div class="servo-details">
+                            <span>POT: <strong id="pot1">0</strong>%</span>
+                            <span>PWM: <strong id="pwm1">26</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="servo-card" id="servo2">
+                    <div class="servo-header">
+                        <i class="fas fa-cog"></i>
+                        <h3>SERVO 2</h3>
+                        <span class="servo-badge" id="badge2">STOP</span>
+                    </div>
+                    <div class="servo-display">
+                        <div class="angle-display">
+                            <span class="angle-value" id="angle2">0</span>
+                            <span class="angle-unit">°</span>
+                        </div>
+                        <div class="servo-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" id="progress2"></div>
+                                <div class="progress-thumb" id="thumb2"></div>
+                            </div>
+                        </div>
+                        <div class="servo-details">
+                            <span>POT: <strong id="pot2">0</strong>%</span>
+                            <span>PWM: <strong id="pwm2">26</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="servo-card" id="servo3">
+                    <div class="servo-header">
+                        <i class="fas fa-cog"></i>
+                        <h3>SERVO 3</h3>
+                        <span class="servo-badge" id="badge3">STOP</span>
+                    </div>
+                    <div class="servo-display">
+                        <div class="angle-display">
+                            <span class="angle-value" id="angle3">0</span>
+                            <span class="angle-unit">°</span>
+                        </div>
+                        <div class="servo-progress">
+                            <div class="progress-track">
+                                <div class="progress-fill" id="progress3"></div>
+                                <div class="progress-thumb" id="thumb3"></div>
+                            </div>
+                        </div>
+                        <div class="servo-details">
+                            <span>POT: <strong id="pot3">0</strong>%</span>
+                            <span>PWM: <strong id="pwm3">26</strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="charts" class="content-section">
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-chart-line"></i> Angoli Servo (Real-time)</h3>
+                        <div class="chart-controls">
+                            <button onclick="clearCharts()" class="btn btn-secondary">
+                                <i class="fas fa-eraser"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="servoChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h3><i class="fas fa-sliders-h"></i> Potenziometri (%)</h3>
+                        <div class="chart-controls">
+                            <button onclick="clearCharts()" class="btn btn-secondary">
+                                <i class="fas fa-eraser"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="potChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="table" class="content-section">
+            <div class="table-card">
+                <div class="table-header">
+                    <h3><i class="fas fa-table"></i> Storico Misurazioni</h3>
+                    <div class="table-controls">
+                        <button onclick="refreshTable()" class="btn btn-primary">
+                            <i class="fas fa-sync-alt"></i> Aggiorna
+                        </button>
+                        <button onclick="exportTable()" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Esporta CSV
+                        </button>
+                        <select id="tableLimit" onchange="refreshTable()">
+                            <option value="25">25 record</option>
+                            <option value="50" selected>50 record</option>
+                            <option value="100">100 record</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="dataTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-clock"></i> Ora</th>
+                                <th><i class="fas fa-calendar"></i> Data</th>
+                                <th><i class="fas fa-cog"></i> S1 (°)</th>
+                                <th><i class="fas fa-cog"></i> S2 (°)</th>
+                                <th><i class="fas fa-cog"></i> S3 (°)</th>
+                                <th><i class="fas fa-sliders-h"></i> P1 (%)</th>
+                                <th><i class="fas fa-sliders-h"></i> P2 (%)</th>
+                                <th><i class="fas fa-sliders-h"></i> P3 (%)</th>
+                                <th><i class="fas fa-hand-pointer"></i> BTN</th>
+                                <th><i class="fas fa-lightbulb"></i> LED</th>
+                                <th><i class="fas fa-power-off"></i> Attivi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr>
+                                <td colspan="11" class="loading">
+                                    <i class="fas fa-spinner fa-spin"></i> Caricamento dati...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section id="settings" class="content-section">
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3><i class="fas fa-cog"></i> Configurazione Dashboard</h3>
+                    <div class="setting-item">
+                        <label>Aggiornamento automatico</label>
+                        <label class="switch">
+                            <input type="checkbox" id="autoRefresh" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-item">
+                        <label>Intervallo aggiornamento (sec)</label>
+                        <select id="refreshInterval">
+                            <option value="1">1 secondo</option>
+                            <option value="2" selected>2 secondi</option>
+                            <option value="5">5 secondi</option>
+                            <option value="10">10 secondi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="settings-card">
+                    <h3><i class="fas fa-database"></i> Statistiche Sistema</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Ultimo aggiornamento:</span>
+                            <span class="stat-value" id="lastUpdate">-</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Uptime:</span>
+                            <span class="stat-value" id="uptime">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
